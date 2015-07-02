@@ -1,0 +1,82 @@
+    class ARFFEncoder
+    {
+        public static StreamWriter sw;
+        public static FileInfo fileInfo;
+
+        public ARFFEncoder(FileInfo file)
+        {
+            fileInfo = file;
+            sw = new StreamWriter(fileInfo.ARFFFile);
+        }
+
+        public void MapToAttributes()
+        {
+            StreamReader sr = new StreamReader(fileInfo.MapFile);
+
+            string line;
+
+            sw.WriteLine("@relation GeneData");
+
+            while ((line = sr.ReadLine()) != null)   
+            {
+                char[] delimiters = new char[] { '\t' };
+                string[] parts = line.Split(delimiters, StringSplitOptions.RemoveEmptyEntries);   
+                sw.WriteLine("@attribute "+parts[1]+" string");
+            } 
+   
+            sw.WriteLine("@attribute SampleID string");
+            sw.WriteLine("@attribute Category { 1, 2 }");
+
+            sr.Close();
+           
+        }
+
+        public void PedToData()
+        {
+            StreamReader sr = new StreamReader(fileInfo.PedFile);
+            Regex alphabetic = new Regex("[a-zA-Z]");
+            string line;
+            bool firstBase = false;
+
+
+            sw.WriteLine("@data");
+
+            while ((line = sr.ReadLine()) != null)
+            {
+
+                for (int i = 34; i<line.Length; i++)
+                {
+                   if (alphabetic.IsMatch(line[i].ToString()) && !firstBase)
+                   {
+                       firstBase = true;
+                   }
+                   else if (alphabetic.IsMatch(line[i].ToString()) && firstBase)
+                   {
+                       line = line.Remove(i-1, 1);
+                       firstBase = false;
+                   }
+                }
+
+                string formatString = "";
+                char[] delimiters = new char[] { '\t', ' ' };
+                
+                string[] parts = line.Split(delimiters, StringSplitOptions.RemoveEmptyEntries);
+
+                for (int i = 6; i<parts.Length; i = i+2)
+                    formatString += parts[i]+",";
+
+
+                //formatString = formatString.Substring(0, formatString.Length - 1);
+                formatString += parts[1] + "," + parts[5];
+                formatString = formatString.Replace(" ", "");
+                sw.WriteLine(formatString);
+            }
+
+            sr.Close();
+        }
+
+        public void CloseStream()
+        {
+            sw.Close();
+        }
+    }
